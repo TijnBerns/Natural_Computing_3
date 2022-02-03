@@ -2,7 +2,7 @@ import random
 import matplotlib.pyplot as plt
 import argparse
 
-"""Methods for excercise 3"""
+"""Methods for excercise 4"""
 
 
 def fitness(bitstring: str) -> int:
