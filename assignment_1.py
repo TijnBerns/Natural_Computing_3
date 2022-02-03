@@ -2,7 +2,7 @@ import random
 import matplotlib.pyplot as plt
 import argparse
 
-"""Methods for excercise 4"""
+"""Methods for exercise 4"""
 
 
 def fitness(bitstring: str) -> int:
@@ -77,14 +77,14 @@ def exercise_4():
     plt.show()
 
 
-"""Methods for excercise 6"""
+"""Methods for exercise 6"""
 
 
 def exercise_6():
     pass
 
 
-"""Methods for excercise 6"""
+"""Methods for exercise 6"""
 
 
 def exercise_8():
@@ -93,13 +93,13 @@ def exercise_8():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-e", "--excercise", choices=[4, 6, 8], default=4, type=int,
+    parser.add_argument("-e", "--exercise", choices=[4, 6, 8], default=4, type=int,
                         help="The number of the exercise of which the code will be executed")
     args = parser.parse_args()
 
-    if args.excercise == 4:
+    if args.exercise == 4:
         exercise_4()
-    elif args.excercise == 6:
+    elif args.exercise == 6:
         exercise_6()
-    elif args.excercise == 8:
+    elif args.exercise == 8:
         exercise_8()
