@@ -5,5 +5,5 @@ This repository contains the code used for the assignments of the course Natural
 ---
 **Group 3:**
 - Tijn Berns
-- Nils van Harten
+- Niels van Harten
 - Diego Marti
