@@ -1,3 +1,5 @@
+
+#%%
 import random
 import matplotlib.pyplot as plt
 
@@ -36,7 +38,7 @@ def GA(l: int, p: float, n_iter: int = 1500, replace: bool = False, show: int = 
         p (float): Probability of bitflip in mutation step.
         n_iter (int, optional): Number of iterations. Defaults to 1500.
         replace (bool, optional): If True, always replace x with x_m (exercise 4c). Defaults to False.
-        show (int, optional): Print string status after 'show' number of iterations. Defaults to -1.
+        show (int, optional): Print string status each 'show' number of iterations. Defaults to -1.
     Returns:
         list(int): List of fitness scores at each iteration of the algorithm.
     """
@@ -124,6 +126,10 @@ def exercise_4():
 
 
 if __name__ == "__main__":
+    plt.pie([4/29, 9/29, 16/29], labels=['x=2', 'x=3', 'x=9'], shadow=True)
+    plt.show()
+    plt.pie([24/89, 29/89, 36/89],  labels=['x=2', 'x=3', 'x=9'], shadow=True)
+    plt.show()
     exercise_4()
 
 # %%
