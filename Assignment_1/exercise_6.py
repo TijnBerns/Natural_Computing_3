@@ -15,7 +15,7 @@ def fitness(cities: np.array, path: np.array) -> float:
         float: The fitness (1-(sum of distances)) of the given path
     """
     return 1 / sum([np.linalg.norm(cities[path[i]] - cities[path[i+1]])
-                   for i in range(len(path)-1)])
+                   for i in range(-1, len(path)-1)])
 
 
 def compute_population_scores(cities: np.array, population: np.array) -> np.array:
@@ -48,7 +48,7 @@ def binary_tournament(cities: np.array, population: np.array, k: int) -> np.arra
     return population[tour[tour_best]]
 
 
-def crossover(parent1: np.array, parent2: np.array) -> (np.array, np.array):
+def crossover(parent1: np.array, parent2: np.array):
     """Does a crossover overation between two paths
 
     Args:
@@ -131,9 +131,8 @@ def read_TSP(fname: str) -> np.array:
     return np.array(cities)
 
 
-def EA(pop_size: int = 10, iterations: int = 1500, k: int = 2, ma: bool = False) -> np.array:
+def EA(cities: np.array, pop_size: int = 10, iterations: int = 10000, k: int = 2, ma: bool = False) -> np.array:
     # TODO: add local search step and documentation
-    cities = read_TSP("data/file-tsp.txt")
     population = np.array([np.random.permutation(len(cities))
                            for _ in range(pop_size)])
     pop_scores = compute_population_scores(cities, population)
@@ -161,21 +160,52 @@ def EA(pop_size: int = 10, iterations: int = 1500, k: int = 2, ma: bool = False)
         # Compute average and best fitness
         results.append([np.average(pop_scores), np.max(pop_scores)])
 
-    return np.array(results)
+    return np.array(results), population[np.argmax(pop_scores)]
 
 
-def exercise_6():
-    # Run simple EA algorithm
-    results = EA()
+def plot_fitness(results: np.array, title: str = ""):
+    """Plots the average and best fitness against the number of iterations
 
-    # Plot results of simple EA
+    Args:
+        results (np.array): Array containin average and best results
+        title (str): The title of the plot
+    """
     plt.figure(figsize=(7, 7))
     plt.plot(results[:, 1], label="Best fitness")
     plt.plot(results[:, 0], label="Average fitness")
     plt.legend()
     plt.xlabel("Iteration")
     plt.ylabel("Fitness")
+    plt.title(title)
     plt.show()
+
+
+def plot_route(cities: np.array, path: np.array):
+    """Plot the cities and the given path
+
+    Args:
+        cities (np.array): Array of coordinates representing the cities
+        path (np.array): The order in which cities are traversed
+    """
+    plt.figure(figsize=(7, 7))
+    plt.scatter(cities[:, 0], cities[:, 1])
+    
+    for i in range(-1, len(path)-1):
+        plt.annotate(str(path[i]), (cities[path[i]][0], cities[path[i]][1]))
+        plt.plot([cities[path[i]][0], cities[path[i+1]][0]],
+                 [cities[path[i]][1], cities[path[i+1]][1]], color="tab:blue")
+
+    plt.show()
+
+
+def exercise_6():
+    # Load data
+    cities = read_TSP("data/file-tsp.txt")
+
+    # Run simple EA and plot results
+    results, path = EA(cities)
+    plot_fitness(results)
+    plot_route(cities, path)
 
 
 if __name__ == "__main__":
