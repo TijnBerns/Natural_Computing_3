@@ -1,47 +1,106 @@
+from cProfile import label
 import random
 import numpy as np
+import matplotlib.pyplot as plt
 
 
-def fitness():
-    pass
+def fitness(cities: np.array, path: np.array) -> float:
+    """Computes the fitness score of a given path
+
+    Args:
+        cities (np.array): N x 2 array of city coordinates
+        path (np.array): 1 x N array representing a order of cities
+
+    Returns:
+        float: The fitness (1-(sum of distances)) of the given path
+    """
+    return 1 / sum([np.linalg.norm(cities[path[i]] - cities[path[i+1]])
+                   for i in range(len(path)-1)])
 
 
-def crossover(p1: np.array, p2: np.array):
-    assert (len(p1) == len(p2))
+def compute_population_scores(cities: np.array, population: np.array) -> np.array:
+    """Computes fitness scores for an array of paths
+
+    Args:
+        cities (np.array): N x 2 array of city coordinates
+        population (np.array): M x N array of paths
+
+    Returns:
+        np.array: fitness scores for each path in population
+    """
+    return np.array([fitness(cities, candidate) for candidate in population])
+
+
+def binary_tournament(cities: np.array, population: np.array, k: int) -> np.array:
+    """Performs a binary tournament between k candidates
+
+    Args:
+        cities (np.array): N x 2 array of coordinates
+        population (np.array): M x N array of paths
+        k (int, optional): Number of candidates in tournement. Defaults to 2.
+
+    Returns:
+        [type]: Winner of tournement
+    """
+    tour = np.random.choice(np.arange(len(population)), k, replace=False)
+    tour_scores = compute_population_scores(cities, population[tour])
+    tour_best = np.argmax(tour_scores)
+    return population[tour[tour_best]]
+
+
+def crossover(parent1: np.array, parent2: np.array) -> (np.array, np.array):
+    """Does a crossover overation between two paths
+
+    Args:
+        p1 (np.array): Parent 1
+        p2 (np.array): Parent 2
+
+    Returns:
+        (np.array, np.array): The resulting offsprings
+    """
+    assert (len(parent1) == len(parent2))
     # Randomly pick 2 cuts
-    cut1 = random.randint(0, len(p1) - 1)
-    cut2 = random.randint(cut1 + 1, len(p1))
+    cut1 = random.randint(0, len(parent1) - 1)
+    cut2 = random.randint(cut1 + 1, len(parent1))
 
     # Sublists of parents to be kept intact
-    sub1 = p1[cut1:cut2]
-    sub2 = p2[cut1:cut2]
-    print(sub2)
+    sub1 = parent1[cut1:cut2]
+    sub2 = parent2[cut1:cut2]
+    # print(sub2)
 
     # Lists of elements which are missing in offsprings
-    miss1 = [x for x in p2 if x not in sub1]
-    miss2 = [x for x in p1 if x not in sub2]
-    print(miss2)
+    miss1 = [x for x in parent2 if x not in sub1]
+    miss2 = [x for x in parent1 if x not in sub2]
+    # print(miss2)
 
     # The offsprings
-    off1 = p1.copy()
-    off2 = p2.copy()
+    offspring1 = parent1.copy()
+    offspring2 = parent2.copy()
 
     # Replace elements before first cut
     for i in range(cut1):
-        off1[i] = miss1[i]
-        off2[i] = miss2[i]
+        offspring1[i] = miss1[i]
+        offspring2[i] = miss2[i]
 
     # Replace relements after second cut
     j = cut1
-    for i in range(cut2, len(off1)):
-        off1[i] = miss1[j]
-        off2[i] = miss2[j]
+    for i in range(cut2, len(offspring1)):
+        offspring1[i] = miss1[j]
+        offspring2[i] = miss2[j]
         j += 1
 
-    return off1, off2
+    return offspring1, offspring2
 
 
 def mutate(parent: np.array) -> np.array:
+    """Mutates a given path by performing a random swap of cities
+
+    Args:
+        parent (np.array): The path to be mutated
+
+    Returns:
+        np.array: The resulting offspring
+    """
     pos1, pos2 = random.sample(list(np.arange(len(parent))), 2)
     x = parent[pos1]
     parent[pos1] = parent[pos2]
@@ -50,15 +109,74 @@ def mutate(parent: np.array) -> np.array:
     return parent
 
 
-def simple_EA():
-    pass
+def read_TSP(fname: str) -> np.array:
+    """Reads a .txt file to initialize the TSP problem
+
+    Args:
+        fname (str): The filename
+
+    Returns:
+        [type]: List of city coordinates
+    """
+    # Read contents of file
+    with open(fname) as f:
+        lines = f.readlines()
+
+    # Give each set of coordinates a number
+    cities = []
+    for line in lines:
+        city_coordinates = np.array(list(map(float, line.split())))
+        cities.append(city_coordinates)
+
+    return np.array(cities)
+
+
+def EA(pop_size: int = 10, iterations: int = 1500, k: int = 2, ma: bool = False) -> np.array:
+    # TODO: add local search step and documentation
+    cities = read_TSP("data/file-tsp.txt")
+    population = np.array([np.random.permutation(len(cities))
+                           for _ in range(pop_size)])
+    pop_scores = compute_population_scores(cities, population)
+    results = []
+
+    for _ in range(iterations):
+        # Binary tournament
+        parent1 = binary_tournament(cities, population, k)
+        parent2 = binary_tournament(cities, population, k)
+
+        # Recombine selected parents
+        offsprings = np.array(crossover(parent1, parent2))
+
+        # Mutate resulting offsprings
+        for i in range(len(offsprings)):
+            offsprings[i] = mutate(offsprings[i])
+
+        # Population update (replace worst candidate in population with best offspring)
+        off_scores = compute_population_scores(cities, offsprings)
+        best_offspring = np.argmax(off_scores)
+        worst_candidate = np.argmin(pop_scores)
+        population[worst_candidate] = offsprings[best_offspring]
+        pop_scores[worst_candidate] = off_scores[best_offspring]
+
+        # Compute average and best fitness
+        results.append([np.average(pop_scores), np.max(pop_scores)])
+
+    return np.array(results)
 
 
 def exercise_6():
-    pass
+    # Run simple EA algorithm
+    results = EA()
+
+    # Plot results of simple EA
+    plt.figure(figsize=(7, 7))
+    plt.plot(results[:, 1], label="Best fitness")
+    plt.plot(results[:, 0], label="Average fitness")
+    plt.legend()
+    plt.xlabel("Iteration")
+    plt.ylabel("Fitness")
+    plt.show()
 
 
 if __name__ == "__main__":
-    for i in range(1):
-        crossover(np.array([3, 5, 7, 2, 1, 6, 4, 8]),
-                  np.array([2, 5, 7, 6, 8, 1, 3, 4]))
+    exercise_6()
