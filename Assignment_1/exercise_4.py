@@ -1,5 +1,3 @@
-
-#%%
 import random
 import matplotlib.pyplot as plt
 
@@ -126,10 +124,4 @@ def exercise_4():
 
 
 if __name__ == "__main__":
-    plt.pie([4/29, 9/29, 16/29], labels=['x=2', 'x=3', 'x=9'], shadow=True)
-    plt.show()
-    plt.pie([24/89, 29/89, 36/89],  labels=['x=2', 'x=3', 'x=9'], shadow=True)
-    plt.show()
     exercise_4()
-
-# %%

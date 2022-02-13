@@ -1,8 +1,9 @@
-from cProfile import label
+#%%
 import random
+from more_itertools import iter_except
 import numpy as np
 import matplotlib.pyplot as plt
-
+import matplotlib.colors as mcolors
 
 def fitness(cities: np.array, path: np.array) -> float:
     """Computes the fitness score of a given path
@@ -31,7 +32,7 @@ def compute_population_scores(cities: np.array, population: np.array) -> np.arra
     return np.array([fitness(cities, candidate) for candidate in population])
 
 
-def binary_tournament(cities: np.array, population: np.array, k: int) -> np.array:
+def tournament(cities: np.array, population: np.array, k: int) -> np.array:
     """Performs a binary tournament between k candidates
 
     Args:
@@ -66,12 +67,10 @@ def crossover(parent1: np.array, parent2: np.array):
     # Sublists of parents to be kept intact
     sub1 = parent1[cut1:cut2]
     sub2 = parent2[cut1:cut2]
-    # print(sub2)
 
     # Lists of elements which are missing in offsprings
     miss1 = [x for x in parent2 if x not in sub1]
     miss2 = [x for x in parent1 if x not in sub2]
-    # print(miss2)
 
     # The offsprings
     offspring1 = parent1.copy()
@@ -131,17 +130,90 @@ def read_TSP(fname: str) -> np.array:
     return np.array(cities)
 
 
-def EA(cities: np.array, pop_size: int = 10, iterations: int = 10000, k: int = 2, ma: bool = False) -> np.array:
-    # TODO: add local search step and documentation
+def local_search(cities: np.array, path: np.array, max_iter=100):
+    """Performs local search based on 2-opt algorithm
+
+    Args:
+        cities (np.array): N x 2 array of city coordinates
+        path (np.array): 1 x N array of cities denoting the path
+        max_iter (int, optional): Maximum number of local search iterations. Defaults to 100.
+
+    Returns:
+        np.array: Best found path during local search
+    """
+    best_path = path.copy()
+    best_fitness = fitness(cities, best_path)
+    found = True
+    iter = 0
+
+    while found and iter < max_iter:
+        found = False
+        iter += 1
+
+        for i in range(len(best_path)):
+
+            for k in range(i, len(best_path)):
+                new_path = two_opt_swap(best_path, i, k)
+                new_fitness = fitness(cities, new_path)
+
+                if (new_fitness > best_fitness):
+                    best_path = new_path
+                    best_fitness = new_fitness
+                    found = True
+                    break
+
+            if found:
+                break
+
+    return best_path
+
+
+def two_opt_swap(path: np.array, i: int, k: int):
+    """
+
+    Args:
+        path (np.array): The path to be altered
+        i (int): index 1 
+        k (int): index 2
+
+    Returns:
+        np.array: altered path based on 2-opt
+    """
+    new_path = path[:i]
+    new_path = np.append(new_path, np.flip(path[i:k+1]))
+    new_path = np.append(new_path, path[k+1:])
+    return new_path.astype(int)
+
+
+def EA(cities: np.array, pop_size: int = 10, iterations: int = 1500, k: int = 2, ma: bool = False):
+    """Executes the EA algorithm
+
+    Args:
+        cities (np.array): N x 2 array of city coordinates
+        pop_size (int, optional): Size of the entire population. Defaults to 10.
+        iterations (int, optional): Number of iterations. Defaults to 1500.
+        k (int, optional): Number of contenders during parent selection. Defaults to 2.
+        ma (bool, optional): Flag, whether to include local search. Defaults to False.
+
+    Returns:
+        np.array, np.array: Best and average scores per iteration; and best candidate in final population 
+    """
     population = np.array([np.random.permutation(len(cities))
                            for _ in range(pop_size)])
+
+    if ma:
+        print(f"Executing local search on entire population...")
+        for i in range(len(population)):
+            population[i] = local_search(cities, population[i])
+
     pop_scores = compute_population_scores(cities, population)
     results = []
 
-    for _ in range(iterations):
+    print(f"Executing algorithm...")
+    for i in range(iterations):
         # Binary tournament
-        parent1 = binary_tournament(cities, population, k)
-        parent2 = binary_tournament(cities, population, k)
+        parent1 = tournament(cities, population, k)
+        parent2 = tournament(cities, population, k)
 
         # Recombine selected parents
         offsprings = np.array(crossover(parent1, parent2))
@@ -149,6 +221,8 @@ def EA(cities: np.array, pop_size: int = 10, iterations: int = 10000, k: int = 2
         # Mutate resulting offsprings
         for i in range(len(offsprings)):
             offsprings[i] = mutate(offsprings[i])
+            if ma:
+                offsprings[i] = local_search(cities, offsprings[i])
 
         # Population update (replace worst candidate in population with best offspring)
         off_scores = compute_population_scores(cities, offsprings)
@@ -189,7 +263,7 @@ def plot_route(cities: np.array, path: np.array):
     """
     plt.figure(figsize=(7, 7))
     plt.scatter(cities[:, 0], cities[:, 1])
-    
+
     for i in range(-1, len(path)-1):
         plt.annotate(str(path[i]), (cities[path[i]][0], cities[path[i]][1]))
         plt.plot([cities[path[i]][0], cities[path[i+1]][0]],
@@ -203,10 +277,35 @@ def exercise_6():
     cities = read_TSP("data/file-tsp.txt")
 
     # Run simple EA and plot results
-    results, path = EA(cities)
-    plot_fitness(results)
-    plot_route(cities, path)
+    _, axis = plt.subplots(1, 2, figsize=(14,7))
+    colors = mcolors.TABLEAU_COLORS
+    for _ in range(10):
+        results, _ = EA(cities)
+        axis[0].plot(results[:, 1])
+        axis[1].plot(results[:, 0])
+    for ax in axis:
+        ax.set_xlabel("Iteration")
+        ax.set_ylabel("Fitness")
+    axis[0].set_title("Best fitness against number of iterations of simple EA algorithm")
+    axis[1].set_title("Average fitness against number of iterations of simple EA algorithm")
+    plt.show()
+    
+    # Run MA and plot results
+    _, axis = plt.subplots(2, 2, figsize=(14,7))
+    colors = mcolors.TABLEAU_COLORS
+    for _ in range(10):
+        results, _ = EA(cities, ma=True)
+        axis[0].plot(results[:, 1])
+        axis[1].plot(results[:, 0])
+    for ax in axis:
+        ax.set_xlabel("Iteration")
+        ax.set_ylabel("Fitness")
+    axis[0].set_title("Best fitness against number of iterations of memetic EA algorithm")
+    axis[1].set_title("Average fitness against number of iterations of memetic EA algorithm")
+    plt.show()
 
 
 if __name__ == "__main__":
     exercise_6()
+
+# %%
