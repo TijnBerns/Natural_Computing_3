@@ -1,9 +1,8 @@
-#%%
+# %%
 import random
-from more_itertools import iter_except
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
+
 
 def fitness(cities: np.array, path: np.array) -> float:
     """Computes the fitness score of a given path
@@ -127,7 +126,9 @@ def read_TSP(fname: str) -> np.array:
         city_coordinates = np.array(list(map(float, line.split())))
         cities.append(city_coordinates)
 
-    return np.array(cities)
+    cities = np.array(cities)
+    print(cities.shape)
+    return cities[:, 1:] if cities.shape == (len(cities), 3) else cities
 
 
 def local_search(cities: np.array, path: np.array, max_iter=100):
@@ -273,36 +274,42 @@ def plot_route(cities: np.array, path: np.array):
 
 
 def exercise_6():
-    # Load data
-    cities = read_TSP("data/file-tsp.txt")
-
-    # Run simple EA and plot results
-    _, axis = plt.subplots(1, 2, figsize=(14,7))
-    colors = mcolors.TABLEAU_COLORS
-    for _ in range(10):
-        results, _ = EA(cities)
-        axis[0].plot(results[:, 1])
-        axis[1].plot(results[:, 0])
-    for ax in axis:
-        ax.set_xlabel("Iteration")
-        ax.set_ylabel("Fitness")
-    axis[0].set_title("Best fitness against number of iterations of simple EA algorithm")
-    axis[1].set_title("Average fitness against number of iterations of simple EA algorithm")
-    plt.show()
+    files = ["data/airports.txt", "data/file-tsp.txt"]
     
-    # Run MA and plot results
-    _, axis = plt.subplots(2, 2, figsize=(14,7))
-    colors = mcolors.TABLEAU_COLORS
-    for _ in range(10):
-        results, _ = EA(cities, ma=True)
-        axis[0].plot(results[:, 1])
-        axis[1].plot(results[:, 0])
-    for ax in axis:
-        ax.set_xlabel("Iteration")
-        ax.set_ylabel("Fitness")
-    axis[0].set_title("Best fitness against number of iterations of memetic EA algorithm")
-    axis[1].set_title("Average fitness against number of iterations of memetic EA algorithm")
-    plt.show()
+    for file in files:
+        # Load data
+        cities = read_TSP(file)
+
+        # Run simple EA and plot results
+        _, axis = plt.subplots(1, 2, figsize=(14, 7))
+        for _ in range(10):
+            results, path = EA(cities)
+            axis[0].plot(results[:, 1])
+            axis[1].plot(results[:, 0])
+        for ax in axis:
+            ax.set_xlabel("Iteration")
+            ax.set_ylabel("Fitness")
+        axis[0].set_title(
+            "Best fitness against number of iterations of simple EA algorithm")
+        axis[1].set_title(
+            "Average fitness against number of iterations of simple EA algorithm")
+        plt.show()
+        plot_route(cities, path)
+
+        # Run MA and plot results
+        _, axis = plt.subplots(1, 2, figsize=(14, 7))
+        for _ in range(10):
+            results, _ = EA(cities, ma=True)
+            axis[0].plot(results[:, 1])
+            axis[1].plot(results[:, 0])
+        for ax in axis:
+            ax.set_xlabel("Iteration")
+            ax.set_ylabel("Fitness")
+        axis[0].set_title(
+            "Best fitness against number of iterations of memetic EA algorithm")
+        axis[1].set_title(
+            "Average fitness against number of iterations of memetic EA algorithm")
+        plt.show()
 
 
 if __name__ == "__main__":
