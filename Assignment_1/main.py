@@ -10,11 +10,11 @@ if __name__ == "__main__":
                         help="The number of the exercise of which the code will be executed")
     args = parser.parse_args()
 
-    if args.excercise == 4:
+    if args.exercise == 4:
         exercise_4()
-    elif args.excercise == 6:
+    elif args.exercise == 6:
         exercise_6()
-    elif args.excercise == 8:
+    elif args.exercise == 8:
         exercise_8()
     else:
         exercise_4

@@ -1,4 +1,3 @@
-# %%
 import random
 import numpy as np
 import matplotlib.pyplot as plt
@@ -161,7 +160,7 @@ def local_search(cities: np.array, path: np.array, max_iter=1):
                     best_path = new_path
                     best_fitness = new_fitness
                     found = True
-                    
+
         path = best_path
 
     return best_path
@@ -200,14 +199,12 @@ def EA(cities: np.array, pop_size: int = 10, iterations: int = 1500, k: int = 2,
                            for _ in range(pop_size)])
 
     if ma:
-        print(f"Executing local search on entire population...")
         for i in range(len(population)):
             population[i] = local_search(cities, population[i])
 
     pop_scores = compute_population_scores(cities, population)
     results = []
 
-    print(f"Executing algorithm...")
     for i in range(iterations):
         # Binary tournament
         parent1 = tournament(cities, population, k)
@@ -271,15 +268,19 @@ def plot_route(cities: np.array, path: np.array):
 
 
 def exercise_6():
+    print("EXECUTING CODE OF EXERCISE 4...")
     files = ["data/airports.txt", "data/file-tsp.txt"]
 
     for file in files:
+        print(f"Running experiments for {file}...")
+
         # Load data
         cities = read_TSP(file)
 
         # Run simple EA and plot results
         _, axis = plt.subplots(1, 2, figsize=(14, 7))
-        for _ in range(10):
+        for i in range(10):
+            print(f"Simple EA {i}/10")
             results, path = EA(cities)
             axis[0].plot(results[:, 1])
             axis[1].plot(results[:, 0])
@@ -296,6 +297,7 @@ def exercise_6():
         # Run MA and plot results
         _, axis = plt.subplots(1, 2, figsize=(14, 7))
         for i in range(10):
+            print(f"Memetic EA {i}/10")
             results, _ = EA(cities, ma=True)
             np.savetxt(f"{file[5:10]}_MA_{i}.txt", results)
             axis[0].plot(results[:, 1])
@@ -312,5 +314,3 @@ def exercise_6():
 
 if __name__ == "__main__":
     exercise_6()
-
-# %%
