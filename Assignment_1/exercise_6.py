@@ -32,7 +32,7 @@ def compute_population_scores(cities: np.array, population: np.array) -> np.arra
 
 
 def tournament(cities: np.array, population: np.array, k: int) -> np.array:
-    """Performs a binary tournament between k candidates
+    """Performs a tournament between k candidates
 
     Args:
         cities (np.array): N x 2 array of coordinates
@@ -131,13 +131,13 @@ def read_TSP(fname: str) -> np.array:
     return cities[:, 1:] if cities.shape == (len(cities), 3) else cities
 
 
-def local_search(cities: np.array, path: np.array, max_iter=100):
+def local_search(cities: np.array, path: np.array, max_iter=1):
     """Performs local search based on 2-opt algorithm
 
     Args:
         cities (np.array): N x 2 array of city coordinates
         path (np.array): 1 x N array of cities denoting the path
-        max_iter (int, optional): Maximum number of local search iterations. Defaults to 100.
+        max_iter (int, optional): Maximum number of local search iterations. Defaults to 1.
 
     Returns:
         np.array: Best found path during local search
@@ -151,20 +151,18 @@ def local_search(cities: np.array, path: np.array, max_iter=100):
         found = False
         iter += 1
 
-        for i in range(len(best_path)):
+        for i in range(1, len(path) - 2):
 
-            for k in range(i, len(best_path)):
-                new_path = two_opt_swap(best_path, i, k)
+            for k in range(i + 1, len(path)):
+                new_path = two_opt_swap(path, i, k)
                 new_fitness = fitness(cities, new_path)
 
                 if (new_fitness > best_fitness):
                     best_path = new_path
                     best_fitness = new_fitness
                     found = True
-                    break
-
-            if found:
-                break
+                    
+        path = best_path
 
     return best_path
 
@@ -180,10 +178,9 @@ def two_opt_swap(path: np.array, i: int, k: int):
     Returns:
         np.array: altered path based on 2-opt
     """
-    new_path = path[:i]
-    new_path = np.append(new_path, np.flip(path[i:k+1]))
-    new_path = np.append(new_path, path[k+1:])
-    return new_path.astype(int)
+    new_path = path.copy()
+    new_path[i:k] = new_path[k-1:i-1:-1]
+    return new_path
 
 
 def EA(cities: np.array, pop_size: int = 10, iterations: int = 1500, k: int = 2, ma: bool = False):
@@ -275,7 +272,7 @@ def plot_route(cities: np.array, path: np.array):
 
 def exercise_6():
     files = ["data/airports.txt", "data/file-tsp.txt"]
-    
+
     for file in files:
         # Load data
         cities = read_TSP(file)
@@ -298,8 +295,9 @@ def exercise_6():
 
         # Run MA and plot results
         _, axis = plt.subplots(1, 2, figsize=(14, 7))
-        for _ in range(10):
+        for i in range(10):
             results, _ = EA(cities, ma=True)
+            np.savetxt(f"{file[5:10]}_MA_{i}.txt", results)
             axis[0].plot(results[:, 1])
             axis[1].plot(results[:, 0])
         for ax in axis:
