@@ -3,7 +3,7 @@ import operator
 import math
 import numpy as np
 import sys
-
+import matplotlib.pyplot as plt
 
 def protectedDiv(left, right):
     if right != 0:
@@ -109,6 +109,30 @@ def exercise_8():
     hof = tools.HallOfFame(1)
     pop, log = algorithms.eaSimple(pop, toolbox, p_crossover, p_mutation, n_generations, stats=mstats,
                                    halloffame=hof, verbose=True)
-    
+    gen = log.select("gen")
+    fit_max = log.chapters["fitness"].select("max")
+
+    plt.plot(gen, fit_max)
+    plt.title("Best fitness against number of iterations of GP algorithm")
+    plt.xlabel("Iteration")
+    plt.ylabel("Fitness")
+    plt.ylim(top=200, bottom=0)
+    plt.show()
+
+    size_max = log.chapters["size"].select("max")
+    size_avg = log.chapters["size"].select("avg")
+    size_min = log.chapters["size"].select("min")
+
+    plt.plot(gen, size_max, label="max")
+    plt.plot(gen, size_avg, label="avg")
+    plt.plot(gen, size_min, label="min")
+    plt.fill_between(gen, size_min, size_max, alpha=0.3)
+    #plt.title("Nodes with best fitness against number of iterations of GP algorithm")
+    plt.xlabel("Iteration")
+    plt.ylabel("Size")
+    plt.ylim(bottom=0)
+
+    plt.show()
+
 if __name__ == "__main__":
     exercise_8()
