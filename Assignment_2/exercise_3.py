@@ -1,3 +1,4 @@
+import math
 from curses import KEY_MARK
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,7 +40,15 @@ def k_means(k: int, data: list):
     return centroids, clusters
 
 
-def init_particles(N_o, N_c, N_d):
+def distance(z, centroid):
+    d_squared = 0
+    for k in range(len(z)):
+        d_squared += (z[k] - centroid[k]) ** 2
+
+    return math.sqrt(d_squared)
+
+
+def init_particles(N_o: int, N_c, N_d):
     random = np.random.default_rng()
 
     x = []
@@ -49,18 +58,18 @@ def init_particles(N_o, N_c, N_d):
     return x
 
 
-def update_particle(x_i, data_points):
-    for z in data_points:
-        return 0
-
-
-def pso_clustering(max_iter=10):
+def pso_clustering(max_iter: int, data: list):
     x = init_particles(10, 5, 2)
 
     for i in range(max_iter):
         for x_i in x:
-            update_particle(x_i, [])
-        # for each particle x_i
+            for z in data:
+                for centroid in x_i:
+                    d = distance(z, centroid)
+                # assign z to centroid with minimal distance
+            # compute fitness x_i
+            # update local best
+            
         # update global best
         # update each particle x_i using PSO update rules (formula)
 
