@@ -14,11 +14,11 @@ def k_means(k: int, data: list):
         _type_: _description_
     """
     centroids = data[np.random.choice(      # initial centroids
-        data.shape[0], k, replace=False)]   
+        data.shape[0], k, replace=False)]
     clusters = np.zeros(len(data))          # initial cluster assignment
     update = True                           # flag to test stop condition
     iter = 0                                # iteration nr
-    
+
     while update:
         iter += 1
         update = False
@@ -31,12 +31,40 @@ def k_means(k: int, data: list):
         for i in range(len(centroids)):
             prev_centroid = np.copy(centroids[i])
             centroids[i] = np.average(data[np.where(clusters == i)[0]], axis=0)
-            
+
             if np.any(prev_centroid != centroids[i]):
                 update = True
 
     print(f"Found stable clustering of {k} clusters in {iter} iterations.")
     return centroids, clusters
+
+
+def init_particles(N_o, N_c, N_d):
+    random = np.random.default_rng()
+
+    x = []
+    for i in range(N_o):
+        x.append(random.uniform(size=N_c * N_d).reshape((-1, N_d)))
+
+    return x
+
+
+def update_particle(x_i, data_points):
+    for z in data_points:
+        return 0
+
+
+def pso_clustering(max_iter=10):
+    x = init_particles(10, 5, 2)
+
+    for i in range(max_iter):
+        for x_i in x:
+            update_particle(x_i, [])
+        # for each particle x_i
+        # update global best
+        # update each particle x_i using PSO update rules (formula)
+
+    return x
 
 
 def generate_data(means: np.array, cov: np.array) -> np.array:
@@ -73,55 +101,18 @@ def plot_clusters(data, clusters):
 
 
 def exercise_3() -> None:
+    # Genrate artificial datasets
     means = [[-3, 0], [0, 0], [3, 0]]
     cov = [[0.50, 0.05], [0.05, 0.50]]
     art_data_1 = np.random.uniform(-1, 1, (400, 2))
-    art_data_2 = generate_data(means, cov)
-
-    _, clusters = k_means(3, art_data_2)
-    plot_clusters(art_data_2, clusters)
+    art_data_2 = generate_data(means, cov)      
+    
+    # Perform clustering on both datasets and plot results
+    _, clusters_1 = k_means(2, art_data_1)
+    _, clusters_2 = k_means(3, art_data_2)
+    plot_clusters(art_data_1, clusters_1)
+    plot_clusters(art_data_2, clusters_2)
 
 
 if __name__ == "__main__":
     exercise_3()
-
-def init_particles(N_o, N_c, N_d):
-    random = np.random.default_rng()
-
-    x = []
-    for i in range(N_o):
-        x.append(random.uniform(size=N_c * N_d).reshape((-1, N_d)))
-
-    return x
-
-
-def update_particle(x_i, data_points):
-    for z in data_points:
-        return 0
-
-
-def pso_clustering(max_iter=10):
-    x = init_particles(10, 5, 2)
-
-    for i in range(max_iter):
-        for x_i in x:
-            update_particle(x_i, [])
-        # for each particle x_i
-        # update global best
-        # update each particle x_i using PSO update rules (formula)
-
-    return x
-
-
-def k_means_clustering():
-    N_d = 2
-    N_o = 10
-    N_c = 5
-    z_p = 2
-    m = []
-    n = []
-    C = []
-
-    return 0
-
-
