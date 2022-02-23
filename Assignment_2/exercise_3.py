@@ -1,7 +1,10 @@
 import math
+import sys
 from curses import KEY_MARK
 import numpy as np
 import matplotlib.pyplot as plt
+
+random = np.random.default_rng()
 
 
 def k_means(k: int, data: list):
@@ -48,9 +51,24 @@ def distance(z, centroid):
     return math.sqrt(d_squared)
 
 
-def init_particles(N_o: int, N_c, N_d):
-    random = np.random.default_rng()
+def particle_fitness(clustering: list, k: int):
+    sum_over_k = 0
+    for j in range(k):
+        sum_over_k += sum(clustering[j]) / len(clustering[j])
 
+    return sum_over_k / k
+
+
+def update_particle_velocity(v: float, x_i, local_best, global_best):
+    r_1 = random.uniform()
+    r_2 = random.uniform()
+
+    v_next = 0.72 * v + 1.49 * r_1 * (local_best - x_i) + 1.49 * r_2 * (global_best - x_i)
+
+    return v_next
+
+
+def init_particles(N_o: int, N_c, N_d):
     x = []
     for i in range(N_o):
         x.append(random.uniform(size=N_c * N_d).reshape((-1, N_d)))
@@ -58,20 +76,43 @@ def init_particles(N_o: int, N_c, N_d):
     return x
 
 
-def pso_clustering(max_iter: int, data: list):
-    x = init_particles(10, 5, 2)
+def pso_clustering(k: int, data: list, max_iter: int, N_p: int):
+    dim = len(data[0])
+    x = init_particles(N_p, k, dim)
+    v = np.zeros((N_p, k, dim))
 
-    for i in range(max_iter):
-        for x_i in x:
+    local_fits = [2 ^ 30 for p in range(N_p)]
+    global_fit = 2 ^ 30
+    local_bests = [[] for p in range(N_p)]
+    global_best = []
+    for iteration in range(max_iter):
+        for i in range(len(x)):
+            clustering = [[] for cluster in range(k)]
             for z in data:
-                for centroid in x_i:
-                    d = distance(z, centroid)
+                # calculate distance of z to each centroid
+                distances = list(map(lambda centroid: distance(z, centroid), x[i]))
+
                 # assign z to centroid with minimal distance
-            # compute fitness x_i
+                clustering[distances.index(min(distances))].append(min(distances))
+
+            # compute fitness of x_i
+            fitness = particle_fitness(clustering, k)
+
             # update local best
-            
-        # update global best
+            if fitness <= local_fits[i]:
+                local_fits[i] = fitness
+                local_bests[i] = x[i]
+
+            # update global best
+            if fitness <= global_fit:
+                global_fit = fitness
+                global_best = x[i]
+                print(fitness)
+
         # update each particle x_i using PSO update rules (formula)
+        for i in range(len(x)):
+            v[i] = update_particle_velocity(v[i], x[i], local_bests[i], global_best)
+            x[i] = x[i] + v[i]
 
     return x
 
@@ -110,7 +151,7 @@ def plot_clusters(data, clusters):
 
 
 def exercise_3() -> None:
-    # Genrate artificial datasets
+    # Generate artificial datasets
     means = [[-3, 0], [0, 0], [3, 0]]
     cov = [[0.50, 0.05], [0.05, 0.50]]
     art_data_1 = np.random.uniform(-1, 1, (400, 2))
@@ -119,9 +160,11 @@ def exercise_3() -> None:
     # Perform clustering on both datasets and plot results
     _, clusters_1 = k_means(2, art_data_1)
     _, clusters_2 = k_means(3, art_data_2)
-    plot_clusters(art_data_1, clusters_1)
-    plot_clusters(art_data_2, clusters_2)
+    #plot_clusters(art_data_1, clusters_1)
+    #plot_clusters(art_data_2, clusters_2)
 
+    # Perform PSO-clustering
+    pso_clustering(3, art_data_2, 10, 10)
 
 if __name__ == "__main__":
     exercise_3()
