@@ -48,13 +48,12 @@ def pso(k: int, data: np.array, n_particles: int, w: float, c1: float, c2: float
     local_best_fitness = np.full(n_particles, 1_000_000)    # Stores best fitness of each particle
     global_best = np.zeros(k)                               # The global best position
     global_best_fitness = 1_000_000                         # The global best fitness
-    
 
-    for _ in range(max_iter):
-        r1 = np.random.uniform()
-        r2 = np.random.uniform()
-        
+    for iter in range(max_iter):
+        print(iter)
         for i, particle in enumerate(particles):
+            r1 = np.random.uniform()
+            r2 = np.random.uniform()
             clusters = assign_clusters(data, particle)
             fitness = compute_fitness(data, clusters, particle, k)
             
@@ -67,8 +66,10 @@ def pso(k: int, data: np.array, n_particles: int, w: float, c1: float, c2: float
             if fitness < global_best_fitness:
                 global_best = np.copy(particle) 
                 global_best_fitness = fitness
-                
-            # Update centroids
+        
+        # Update centroids      
+        for i, particle in enumerate(particles):
+            
             velocities[i] = w * velocities[i] + c1 * r1 * (local_best[i] - particle) + \
                 c2 * r2 * (global_best - particle)
             particles[i] = particle + velocities[i]
@@ -90,7 +91,6 @@ def get_random_points(data: np.array, n: int):
         np.array: The random samples
     """
     return data[np.random.choice(data.shape[0], n, replace=False)]
-
 
 
 def assign_clusters(data: np.array, centroids: np.array):
@@ -176,9 +176,6 @@ def exercise_3() -> None:
                        for (z1, z2) in data_1])
     data_2, true_2 = generate_data(means, cov)
     
-    _, pred_1 = pso(3, data_2, 10, 0.72, 1.49, 1.49, 100)
-    plot_clusters(data_2, true_2, pred_1)
-
     # Perform k_means clustering on both datasets and plot results
     _, pred_1 = k_means(2, data_1, 100)
     _, pred_2 = k_means(3, data_2, 100)
@@ -186,7 +183,7 @@ def exercise_3() -> None:
     plot_clusters(data_2, true_2, pred_2)
     
     # Perform PSO clustering on both datasets and plot results
-    _, pred_1 = pso(3, data_1, 10, 0.72, 1.49, 1.49, 100)
+    _, pred_1 = pso(2, data_1, 10, 0.72, 1.49, 1.49, 100)
     _, pred_2 = pso(3, data_2, 10, 0.72, 1.49, 1.49, 100)
     plot_clusters(data_1, true_1, pred_1)
     plot_clusters(data_2, true_2, pred_2)
