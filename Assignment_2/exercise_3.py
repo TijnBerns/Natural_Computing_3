@@ -1,31 +1,31 @@
 from curses import KEY_MARK
+from dataclasses import replace
 import numpy as np
 import matplotlib.pyplot as plt
 
+#================= K-means Clustering =================#
 
-def k_means(k: int, data: list):
-    """_summary_
+def k_means(k: int, data: list, max_iter: int):
+    """Exercutes the k-means clustering algorithm
 
     Args:
-        k (int): _description_
-        data (list): _description_
+        k (int): The number of clusters
+        data (list): The data to cluster
 
     Returns:
-        _type_: _description_
+        (np.array, np.array): Array of centroids, and array of cluster assignment
     """
-    centroids = data[np.random.choice(      # initial centroids
-        data.shape[0], k, replace=False)]
+    centroids = get_random_points(data, k)  # random initial centroids
     clusters = np.zeros(len(data))          # initial cluster assignment
     update = True                           # flag to test stop condition
     iter = 0                                # iteration nr
 
-    while update:
+    while update and iter < max_iter:
         iter += 1
         update = False
 
         # Assign data points to centroids
-        clusters = np.array([np.argmin([np.linalg.norm(point - centroid)
-                                        for centroid in centroids]) for point in data])
+        clusters = assign_clusters(data, centroids)
 
         # Update cluster centroids
         for i in range(len(centroids)):
@@ -39,80 +39,180 @@ def k_means(k: int, data: list):
     return centroids, clusters
 
 
-def init_particles(N_o, N_c, N_d):
-    random = np.random.default_rng()
+#================= PSO Clustering =================#
 
-    x = []
-    for i in range(N_o):
-        x.append(random.uniform(size=N_c * N_d).reshape((-1, N_d)))
+def pso(k: int, data: np.array, n_particles: int, w: float, c1: float, c2: float, max_iter: int):
+    particles = np.array([get_random_points(data, k)
+                         for _ in range(n_particles)])      # List of particles
+    velocities = np.zeros_like(particles)                   # Stores velocity of each particle
+    local_best = np.zeros((n_particles, k, *data[0].shape)) # Stores best position of each particle
+    local_best_fitness = np.full(n_particles, 1_000_000)    # Stores best fitness of each particle
+    global_best = np.zeros(k)                               # The global best position
+    global_best_fitness = 1_000_000                         # The global best fitness
+    
 
-    return x
+    for iter in range(max_iter):
+        print(f"Iteration: {iter + 1}")
+        r1 = np.random.uniform()
+        r2 = np.random.uniform()
+        
+        for i, particle in enumerate(particles):
+            clusters = assign_clusters(data, particle)
+            fitness = compute_fitness(data, clusters, particle, k)
+            
+            # Update local best
+            if fitness < local_best_fitness[i]:
+                local_best[i] = np.copy(particle)
+                local_best_fitness[i] = fitness
+            
+            # Update global best
+            if fitness < global_best_fitness:
+                global_best = np.copy(particle) 
+                global_best_fitness = fitness
+                
+            # Update centroids
+            velocities[i] = w * velocities[i] + c1 * r1 * (local_best[i] - particle) + \
+                c2 * r2 * (global_best - particle)
+            particles[i] = particle + velocities[i]
+            
+    clusters = assign_clusters(data, global_best)
+    return global_best, clusters
+        
+
+#================= UTILITY METHODS =================#
+
+def get_random_points(data: np.array, n: int):
+    """Draws two random points from a 2D np.array
+
+    Args:
+        data (np.array): Data from which samples are drawn
+        n (int): The number of samples to draw
+
+    Returns:
+        np.array: The random samples
+    """
+    return data[np.random.choice(data.shape[0], n, replace=False)]
 
 
-def update_particle(x_i, data_points):
-    for z in data_points:
-        return 0
+def assign_clusters(data: np.array, centroids: np.array):
+    """Assigns datapoints to cluster centroids
+
+    Args:
+        data (np.array): The data to cluster
+        centroids (np.array): The cluster centroids
+
+    Returns:
+        np.array: Array containing cluster assignments for all datapoints
+    """
+    return np.array([np.argmin([np.linalg.norm(point - centroid) for centroid in centroids]) for point in data])
 
 
-def pso_clustering(max_iter=10):
-    x = init_particles(10, 5, 2)
+def compute_fitness(data, clusters, centroids, k):
+    """Computes the fitness of a clustering 
+    based on Eq. 8 of Data Clustering Using particle swarm optimization
 
-    for i in range(max_iter):
-        for x_i in x:
-            update_particle(x_i, [])
-        # for each particle x_i
-        # update global best
-        # update each particle x_i using PSO update rules (formula)
+    Args:
+        data (_type_): The data
+        clusters (_type_): The cluster assignment of the data
+        centroids (_type_): The centroids of the clusters
+        k (_type_): The number of centroids (included for better performance)
 
-    return x
+    Returns:
+        float: The quantization error of the clustering
+    """
+    return np.sum([np.sum([np.linalg.norm(z - centroids[j]) / len(data[np.where(clusters == j)])
+                           for z in data[np.where(clusters == j)]])
+                   for j in range(k)]) / k
 
 
 def generate_data(means: np.array, cov: np.array) -> np.array:
-    """Generates artificial data c
+    """Generates artificial data
 
     Args:
-        means (np.array): _description_
-        cov (np.array): _description_
+        means (np.array): Array of means
+        cov (np.array): Covariance matrix
 
     Returns:
-        np.array: _description_
+        np.array: Data drawn from bivariate Gaussian
     """
     data = []
-    for mu in means:
+    clusters = []
+    for i, mu in enumerate(means):
         data.append(np.random.multivariate_normal(mu, cov, 150))
-    return np.concatenate(np.array(data))
+        clusters.append(np.full(150, i))
+    return np.concatenate(np.array(data)), np.concatenate(clusters)
 
 
-def plot_clusters(data, clusters):
-    """_summary_
+def plot_clusters(data, true, pred):
+    """Plots a given clustering
 
     Args:
-        data (_type_): _description_
-        clusters (_type_): _description_
+        data (_type_): The data
+        clusters (_type_): Cluster assignments of the datapoints
     """
-    plt.figure(figsize=(7, 7))
-    for i in np.unique(clusters):
-        cluster = data[np.where(clusters == i)[0]]
-        plt.scatter(cluster[:, 0], cluster[:, 1], s=10)
+    _, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 7))
+    for i in np.unique(true):
+        pred_cluster = data[np.where(pred == i)[0]]
+        true_cluster = data[np.where(true == i)[0]]
+        ax1.scatter(true_cluster[:, 0], true_cluster[:, 1], s=10)
+        ax2.scatter(pred_cluster[:, 0], pred_cluster[:, 1], s=10)
 
-    plt.xlabel("x")
-    plt.ylabel("y")
+    ax1.set_xlabel("x")
+    ax2.set_xlabel("x")
+    ax1.set_ylabel("y")
+    ax1.set_title("True clustering")
+    ax2.set_title("Predicted clustering")
+
     plt.show()
 
 
 def exercise_3() -> None:
+    """Exercutes code for exercise 3
+    """
     # Genrate artificial datasets
     means = [[-3, 0], [0, 0], [3, 0]]
     cov = [[0.50, 0.05], [0.05, 0.50]]
-    art_data_1 = np.random.uniform(-1, 1, (400, 2))
-    art_data_2 = generate_data(means, cov)      
+    data_1 = np.random.uniform(-1, 1, (400, 2))
+    true_1 = np.array([1 if z1 >= 0.7 or (z1 <= 0.3 and z2 >= -0.2 - z1) else 0
+                       for (z1, z2) in data_1])
+    data_2, true_2 = generate_data(means, cov)
     
-    # Perform clustering on both datasets and plot results
-    _, clusters_1 = k_means(2, art_data_1)
-    _, clusters_2 = k_means(3, art_data_2)
-    plot_clusters(art_data_1, clusters_1)
-    plot_clusters(art_data_2, clusters_2)
+    _, pred_1 = pso(3, data_2, 10, 0.72, 1.49, 1.49, 100)
+    plot_clusters(data_2, true_2, pred_1)
 
+
+    # Perform clustering on both datasets and plot results
+    _, pred_1 = k_means(2, data_1, 100)
+    _, pred_2 = k_means(3, data_2, 100)
+    plot_clusters(data_2, true_2, pred_2)
+
+
+# def init_particles(N_o, N_c, N_d):
+#     random = np.random.default_rng()
+
+#     x = []
+#     for i in range(N_o):
+#         x.append(random.uniform(size=N_c * N_d).reshape((-1, N_d)))
+
+#     return x
+
+
+# def update_particle(x_i, data_points):
+#     for z in data_points:
+#         return 0
+
+
+# def pso_clustering(max_iter=10):
+#     x = init_particles(10, 5, 2)
+
+#     for i in range(max_iter):
+#         for x_i in x:
+#             update_particle(x_i, [])
+#         # for each particle x_i
+#         # update global best
+#         # update each particle x_i using PSO update rules (formula)
+
+#     return x
 
 if __name__ == "__main__":
     exercise_3()
