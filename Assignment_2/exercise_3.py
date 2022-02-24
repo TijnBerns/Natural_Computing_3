@@ -1,3 +1,5 @@
+import math
+import sys
 from curses import KEY_MARK
 from dataclasses import replace
 import numpy as np
@@ -94,6 +96,7 @@ def get_random_points(data: np.array, n: int):
     return data[np.random.choice(data.shape[0], n, replace=False)]
 
 
+
 def assign_clusters(data: np.array, centroids: np.array):
     """Assigns datapoints to cluster centroids
 
@@ -180,39 +183,17 @@ def exercise_3() -> None:
     _, pred_1 = pso(3, data_2, 10, 0.72, 1.49, 1.49, 100)
     plot_clusters(data_2, true_2, pred_1)
 
-
-    # Perform clustering on both datasets and plot results
+    # Perform k_means clustering on both datasets and plot results
     _, pred_1 = k_means(2, data_1, 100)
     _, pred_2 = k_means(3, data_2, 100)
+    plot_clusters(data_1, true_1, pred_1)
     plot_clusters(data_2, true_2, pred_2)
-
-
-# def init_particles(N_o, N_c, N_d):
-#     random = np.random.default_rng()
-
-#     x = []
-#     for i in range(N_o):
-#         x.append(random.uniform(size=N_c * N_d).reshape((-1, N_d)))
-
-#     return x
-
-
-# def update_particle(x_i, data_points):
-#     for z in data_points:
-#         return 0
-
-
-# def pso_clustering(max_iter=10):
-#     x = init_particles(10, 5, 2)
-
-#     for i in range(max_iter):
-#         for x_i in x:
-#             update_particle(x_i, [])
-#         # for each particle x_i
-#         # update global best
-#         # update each particle x_i using PSO update rules (formula)
-
-#     return x
+    
+    # Perform PSO clustering on both datasets and plot results
+    _, pred_1 = pso(3, data_2, 10, 0.72, 1.49, 1.49, 100)
+    _, pred_2 = pso(3, data_2, 10, 0.72, 1.49, 1.49, 100)
+    plot_clusters(data_1, true_1, pred_1)
+    plot_clusters(data_2, true_2, pred_2)
 
 if __name__ == "__main__":
     exercise_3()
