@@ -1,7 +1,4 @@
-import math
-import sys
-from curses import KEY_MARK
-from dataclasses import replace
+#%%
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -53,8 +50,7 @@ def pso(k: int, data: np.array, n_particles: int, w: float, c1: float, c2: float
     global_best_fitness = 1_000_000                         # The global best fitness
     
 
-    for iter in range(max_iter):
-        print(f"Iteration: {iter + 1}")
+    for _ in range(max_iter):
         r1 = np.random.uniform()
         r2 = np.random.uniform()
         
@@ -190,10 +186,12 @@ def exercise_3() -> None:
     plot_clusters(data_2, true_2, pred_2)
     
     # Perform PSO clustering on both datasets and plot results
-    _, pred_1 = pso(3, data_2, 10, 0.72, 1.49, 1.49, 100)
+    _, pred_1 = pso(3, data_1, 10, 0.72, 1.49, 1.49, 100)
     _, pred_2 = pso(3, data_2, 10, 0.72, 1.49, 1.49, 100)
     plot_clusters(data_1, true_1, pred_1)
     plot_clusters(data_2, true_2, pred_2)
 
 if __name__ == "__main__":
     exercise_3()
+
+# %%
