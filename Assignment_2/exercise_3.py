@@ -52,8 +52,6 @@ def pso(k: int, data: np.array, n_particles: int, w: float, c1: float, c2: float
 
     for _ in range(max_iter):
         for i, particle in enumerate(particles):
-            r1 = np.random.uniform()
-            r2 = np.random.uniform()
             clusters = assign_clusters(data, particle)
             fitness = compute_fitness(data, clusters, particle, k)
             
@@ -69,7 +67,8 @@ def pso(k: int, data: np.array, n_particles: int, w: float, c1: float, c2: float
         
         # Update centroids      
         for i, particle in enumerate(particles):
-            
+            r1 = np.random.uniform()
+            r2 = np.random.uniform()
             velocities[i] = w * velocities[i] + c1 * r1 * (local_best[i] - particle) + \
                 c2 * r2 * (global_best - particle)
             particles[i] = particle + velocities[i]
