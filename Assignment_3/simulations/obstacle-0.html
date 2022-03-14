@@ -33,15 +33,15 @@ charset=UTF-8">
                 T: 20,				        // CPM temperature
 
                 // Adhesion parameters:
-                J: [[0, 0, 0], [20, 0, 0], [0, 0, m]],
+                J: [[0, 0, 0], [20, 0, m], [0, 0, 0]],
 
                 // VolumeConstraint parameters
                 LAMBDA_V: [0, 50, m],		        // VolumeConstraint importance per cellkind
-                V: [0, 200, 200],			        // Target volume of each cellkind
+                V: [0, 200, 100],			        // Target volume of each cellkind
 
                 // PerimeterConstraint parameters
 				LAMBDA_P: [0, 2, m],				// PerimeterConstraint importance per cellkind
-				P: [0, 180, 50], 				// Target perimeter of each cellkind
+				P: [0, 180, 90], 				// Target perimeter of each cellkind
 
                 // Activation parameters
                 LAMBDA_ACT: [0, 200, 0],
