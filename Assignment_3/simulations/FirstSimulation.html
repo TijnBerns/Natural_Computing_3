@@ -1,0 +1,91 @@
+<!-- Page setup and title -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html;
+charset=UTF-8">
+    <title>PageTitle</title>
+    <style type="text/css">
+        body {
+            font-family: "HelveticaNeue-Light", sans-serif;
+            padding: 15px;
+        }
+    </style>
+
+    <!-- Sourcing the cpm build -->
+
+    <script src="build/artistoo.js"></script>
+    <script>
+        "use strict"
+
+        let m = 1_000
+        
+
+        let config = {
+
+            // Grid settings
+            field_size: [100, 100],
+
+            // CPM parameters and configuration
+
+            conf: {
+                T: 20,				        // CPM temperature
+
+                // Adhesion parameters:
+                J: [[0, 0, 0], [20, 0, 0], [0, 0, m]],
+
+                // VolumeConstraint parameters
+                LAMBDA_V: [0, 50, m],		        // VolumeConstraint importance per cellkind
+                V: [0, 200, 200],			        // Target volume of each cellkind
+
+                // PerimeterConstraint parameters
+				LAMBDA_P: [0, 2, m],				// PerimeterConstraint importance per cellkind
+				P: [0, 180, 50], 				// Target perimeter of each cellkind
+
+                // Activation parameters
+                LAMBDA_ACT: [0, 200, 0],
+                MAX_ACT: [0, 20, 0],
+                ACT_MEAN: "geometric"
+            },
+
+            // Simulation setup and configuration
+            simsettings: {
+                // Cells on the grid
+                NRCELLS: [20, 10],			        // Number of cells to seed for all
+                // non-background cellkinds.
+
+                RUNTIME: 500,                  	// Only used in node
+
+                CANVASCOLOR: "eaecef",
+                CELLCOLOR: ["000000", "FF0000"],
+                ACTCOLOR: [true, false],
+                zoom: 4			// zoom in on canvas with this factor.
+            }
+        }
+
+        let sim
+
+        function initialize() {
+            sim = new CPM.Simulation(config)
+            step()
+        }
+
+        function step() {
+            sim.step()
+            requestAnimationFrame(step)
+        }
+
+
+
+    </script>
+</head>
+
+<body onload="initialize()">
+    <h1>Your Page Title</h1>
+    <p>
+        Description of your page.
+    </p>
+</body>
+
+</html>
