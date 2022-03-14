@@ -3,13 +3,20 @@
 <html lang="en">
 
 <head>
-    <meta http-equiv="Content-Type" content="text/html;
-charset=UTF-8">
-    <title>PageTitle</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Obstacles in CPM</title>
     <style type="text/css">
         body {
-            font-family: "HelveticaNeue-Light", sans-serif;
+            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue",
+                Helvetica, Arial, "Lucida Grande", sans-serif;
             padding: 15px;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        td {
+            padding: 10px;
+            vertical-align: top;
         }
     </style>
 
@@ -19,47 +26,48 @@ charset=UTF-8">
     <script>
         "use strict"
 
-        let m = 1_000
-        
+        // Large value used to create static cells serving as obstacles
+        let m = 10 ** 9
 
         let config = {
-
             // Grid settings
-            field_size: [100, 100],
+            field_size: [150, 150],
 
             // CPM parameters and configuration
-
             conf: {
-                T: 20,				        // CPM temperature
+                seed: 2022,
+                T: 20,
 
                 // Adhesion parameters:
-                J: [[0, 0, 0], [20, 0, m], [0, 0, 0]],
+                J: [
+                    [0, 0, 0], // background
+                    [0, m, 0], // obstacles
+                    [20, m, 0] // cells
+                ],
 
                 // VolumeConstraint parameters
-                LAMBDA_V: [0, 50, m],		        // VolumeConstraint importance per cellkind
-                V: [0, 200, 100],			        // Target volume of each cellkind
+                LAMBDA_V: [0, m, 50],
+                V: [0, 100, 200],
 
                 // PerimeterConstraint parameters
-				LAMBDA_P: [0, 2, m],				// PerimeterConstraint importance per cellkind
-				P: [0, 180, 90], 				// Target perimeter of each cellkind
+                LAMBDA_P: [0, m, 2],
+                P: [0, 90, 180],
 
                 // Activation parameters
-                LAMBDA_ACT: [0, 200, 0],
-                MAX_ACT: [0, 20, 0],
+                LAMBDA_ACT: [0, 0, 200],
+                MAX_ACT: [0, 0, 20],
                 ACT_MEAN: "geometric"
             },
 
             // Simulation setup and configuration
             simsettings: {
-                // Cells on the grid
-                NRCELLS: [20, 10],			        // Number of cells to seed for all
-                // non-background cellkinds.
 
-                RUNTIME: 500,                  	// Only used in node
+                NRCELLS: [0, 30],
 
+                RUNTIME: 500,
                 CANVASCOLOR: "eaecef",
-                CELLCOLOR: ["000000", "FF0000"],
-                ACTCOLOR: [true, false],
+                CELLCOLOR: ["AAAAAA", "000000"],
+                ACTCOLOR: [false, true],
                 zoom: 4			// zoom in on canvas with this factor.
             }
         }
@@ -67,7 +75,11 @@ charset=UTF-8">
         let sim
 
         function initialize() {
-            sim = new CPM.Simulation(config)
+            let custommethods = {
+                initializeGrid: initializeGrid
+            }
+            sim = new CPM.Simulation(config, custommethods)
+
             step()
         }
 
@@ -76,16 +88,41 @@ charset=UTF-8">
             requestAnimationFrame(step)
         }
 
+        function initializeGrid() {
+
+            // add the initializer if not already there
+            if (!this.helpClasses["gm"]) { this.addGridManipulator() }
+
+            // Seed obstacles
+            let step = 24
+            for (var i = 1; i < this.C.extents[0]; i += step) {
+                for (var j = 1; j < this.C.extents[1]; j += step) {
+                    this.gm.seedCellAt(1, [i, j])
+                }
+            }
+
+            // Seed other cells
+            let nrcells = this.conf["NRCELLS"], cellkind, n
+            for (cellkind = 1; cellkind < nrcells.length; cellkind++) {
+                console.log(cellkind)
+                for (var i = 0; i < nrcells[cellkind]; i++) {
+                    if (i == 0) {
+                        this.gm.seedCellAt(cellkind + 1, this.C.midpoint)
+                    } else {
+                        this.gm.seedCell(cellkind + 1)
+                    }
+                }
+            }
+        }
+
 
 
     </script>
 </head>
 
 <body onload="initialize()">
-    <h1>Your Page Title</h1>
-    <p>
-        Description of your page.
-    </p>
+    <h1>Obstacles in CPM</h1>
+    <p>Obstacle cells positioned in a grid. </p>
 </body>
 
 </html>
