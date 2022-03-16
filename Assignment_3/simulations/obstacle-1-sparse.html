@@ -22,12 +22,14 @@
 
     <!-- Sourcing the cpm build -->
 
-    <script src="build/artistoo.js"></script>
+    <script src="../build/artistoo.js"></script>
     <script>
         "use strict"
 
         // Large value used to create static cells serving as obstacles
+        console.log("-\ttime\tid\ttype\tx\ty")
         let m = 10 ** 9
+
 
         let config = {
             // Grid settings
@@ -40,9 +42,9 @@
 
                 // Adhesion parameters:
                 J: [
-                    [0, 0, 0], // background
-                    [0, m, 0], // obstacles
-                    [20, m, 0] // cells
+                    [0, 0, 0],       // background
+                    [0, m, 0],     // obstacles
+                    [20, m, 0],     // cells
                 ],
 
                 // VolumeConstraint parameters
@@ -62,13 +64,21 @@
             // Simulation setup and configuration
             simsettings: {
 
-                NRCELLS: [0, 30],
+                NRCELLS: [0, 1],
 
-                RUNTIME: 500,
+                RUNTIME: 1000,
+                RUNTIME_BROWSER: 1000,
+
                 CANVASCOLOR: "eaecef",
-                CELLCOLOR: ["AAAAAA", "000000"],
-                ACTCOLOR: [false, true],
-                zoom: 4			// zoom in on canvas with this factor.
+                CELLCOLOR: ["AAAAAA", "000000", "FF0000"],
+                ACTCOLOR: [false, true, false],
+
+                // Logging
+                STATSOUT: { browser: true, node: true },   // Should stats be computed?
+                LOGRATE: 10,						        // Output stats every <LOGRATE> MCS.
+
+                zoom: 4,
+
             }
         }
 
@@ -76,6 +86,7 @@
 
         function initialize() {
             let custommethods = {
+                logStats: logStats,
                 initializeGrid: initializeGrid
             }
             sim = new CPM.Simulation(config, custommethods)
@@ -83,10 +94,47 @@
             step()
         }
 
+
         function step() {
             sim.step()
-            requestAnimationFrame(step)
+            if (sim.conf["RUNTIME_BROWSER"] == "Inf" | sim.time + 1 < sim.conf["RUNTIME_BROWSER"]) {
+                requestAnimationFrame(step)
+            }
         }
+
+        // Default logging function but also writes logs to output file 
+        function logStats() {
+
+            // compute centroids for all cells
+            let allcentroids
+            let torus = false
+            for (let d = 0; d < this.C.grid.ndim; d++) {
+                if (this.C.grid.torus[d]) {
+                    torus = true
+                }
+            }
+
+            if (torus) {
+                allcentroids = this.C.getStat(CPM.CentroidsWithTorusCorrection)
+            } else {
+                allcentroids = this.C.getStat(CPM.Centroids)
+            }
+
+            let nrcells = this.conf["NRCELLS"], cellkind, n
+
+            for (let cid of this.C.cellIDs()) {
+
+                let thecentroid = allcentroids[cid]
+                let cellKind = this.C.cellKind(cid)
+
+                if (cellKind != 0 && cellKind != 1) {
+                    console.log("-\t" + this.time + "\t" + cid + "\t" +
+                        this.C.cellKind(cid) + "\t" + thecentroid.join("\t"))
+                }
+
+            }
+        }
+
 
         function initializeGrid() {
 
@@ -104,7 +152,6 @@
             // Seed other cells
             let nrcells = this.conf["NRCELLS"], cellkind, n
             for (cellkind = 1; cellkind < nrcells.length; cellkind++) {
-                console.log(cellkind)
                 for (var i = 0; i < nrcells[cellkind]; i++) {
                     if (i == 0) {
                         this.gm.seedCellAt(cellkind + 1, this.C.midpoint)

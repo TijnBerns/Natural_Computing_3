@@ -1,0 +1,175 @@
+<!-- Page setup and title -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Obstacles in CPM</title>
+    <style type="text/css">
+        body {
+            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue",
+                Helvetica, Arial, "Lucida Grande", sans-serif;
+            padding: 15px;
+            max-width: 600px;
+            margin: auto;
+        }
+
+        td {
+            padding: 10px;
+            vertical-align: top;
+        }
+    </style>
+
+    <!-- Sourcing the cpm build -->
+
+    <script src="../build/artistoo.js"></script>
+    <script>
+        "use strict"
+
+        // Large value used to create static cells serving as obstacles
+        console.log("-\ttime\tid\ttype\tx\ty")
+        let m = 10 ** 9
+
+
+        let config = {
+            // Grid settings
+            field_size: [150, 150],
+
+            // CPM parameters and configuration
+            conf: {
+                seed: 2022,
+                T: 20,
+
+                // Adhesion parameters:
+                J: [
+                    [0, 0, 0],       // background
+                    [0, m, 0],     // obstacles
+                    [20, m, 0],     // cells
+                ],
+
+                // VolumeConstraint parameters
+                LAMBDA_V: [0, m, 50],
+                V: [0, 100, 200],
+
+                // PerimeterConstraint parameters
+                LAMBDA_P: [0, m, 2],
+                P: [0, 90, 180],
+
+                // Activation parameters
+                LAMBDA_ACT: [0, 0, 200],
+                MAX_ACT: [0, 0, 80],
+                ACT_MEAN: "geometric"
+            },
+
+            // Simulation setup and configuration
+            simsettings: {
+
+                NRCELLS: [0, 1],
+
+                RUNTIME: 1000,
+                RUNTIME_BROWSER: 1000,
+
+                CANVASCOLOR: "eaecef",
+                CELLCOLOR: ["AAAAAA", "0000FF"],
+                ACTCOLOR: [false, true],
+
+                // Logging
+                STATSOUT: { browser: true, node: true },   // Should stats be computed?
+                LOGRATE: 10,						        // Output stats every <LOGRATE> MCS.
+
+                zoom: 4,
+
+            }
+        }
+
+        let sim
+
+        function initialize() {
+            let custommethods = {
+                logStats: logStats,
+                initializeGrid: initializeGrid
+            }
+            sim = new CPM.Simulation(config, custommethods)
+
+            step()
+        }
+
+
+        function step() {
+            sim.step()
+            if (sim.conf["RUNTIME_BROWSER"] == "Inf" | sim.time + 1 < sim.conf["RUNTIME_BROWSER"]) {
+                requestAnimationFrame(step)
+            }
+        }
+
+        // Default logging function but also writes logs to output file 
+        function logStats() {
+
+            // compute centroids for all cells
+            let allcentroids
+            let torus = false
+            for (let d = 0; d < this.C.grid.ndim; d++) {
+                if (this.C.grid.torus[d]) {
+                    torus = true
+                }
+            }
+
+            if (torus) {
+                allcentroids = this.C.getStat(CPM.CentroidsWithTorusCorrection)
+            } else {
+                allcentroids = this.C.getStat(CPM.Centroids)
+            }
+
+            let nrcells = this.conf["NRCELLS"], cellkind, n
+
+            for (let cid of this.C.cellIDs()) {
+
+                let thecentroid = allcentroids[cid]
+                let cellKind = this.C.cellKind(cid)
+
+                if (cellKind != 0 && cellKind != 1) {
+                    console.log("-\t" + this.time + "\t" + cid + "\t" +
+                        this.C.cellKind(cid) + "\t" + thecentroid.join("\t"))
+                }
+
+            }
+        }
+
+
+        function initializeGrid() {
+
+            // add the initializer if not already there
+            if (!this.helpClasses["gm"]) { this.addGridManipulator() }
+
+            // Seed obstacles
+            let step = 16
+            for (var i = 1; i < this.C.extents[0]; i += step) {
+                for (var j = 1; j < this.C.extents[1]; j += step) {
+                    this.gm.seedCellAt(1, [i, j])
+                }
+            }
+
+            // Seed other cells
+            let nrcells = this.conf["NRCELLS"], cellkind, n
+            for (cellkind = 1; cellkind < nrcells.length; cellkind++) {
+                for (var i = 0; i < nrcells[cellkind]; i++) {
+                    if (i == 0) {
+                        this.gm.seedCellAt(cellkind + 1, this.C.midpoint)
+                    } else {
+                        this.gm.seedCell(cellkind + 1)
+                    }
+                }
+            }
+        }
+
+
+
+    </script>
+</head>
+
+<body onload="initialize()">
+    <h1>Obstacles in CPM</h1>
+    <p>Obstacle cells positioned in a grid. </p>
+</body>
+
+</html>
