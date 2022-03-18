@@ -29,8 +29,9 @@
         // Large value used to create static cells serving as obstacles
         console.log("-\ttime\tid\ttype\tx\ty\tbelow wall")
         let m = 10 ** 18
-        let n_simulations = 100
+        let n_simulations = 10
         let current = 0
+        let rate = 100
 
 
         let config = {
@@ -99,7 +100,9 @@
 
 
         function step() {
-            sim.step()
+            for (var i = 0; i < rate; i++){
+                sim.step()
+            }
 
             // request new animiation frame
             if (sim.conf["RUNTIME_BROWSER"] == "Inf" | sim.time + 1 < sim.conf["RUNTIME_BROWSER"]) {
@@ -158,7 +161,6 @@
             }
         }
 
-
         function initializeGrid() {
 
             // add the initializer if not already there
@@ -166,7 +168,7 @@
 
             // Seed obstacles
             let step = 5
-            let gap = 30    
+            let gap = 30
             var j = this.C.extents[1] / 2
 
             // Left side of wall
@@ -178,9 +180,10 @@
             // Right side of wall
             for (var i = this.C.extents[0] / 2 + gap; i < this.C.extents[0]; i += step) {
                 this.gm.seedCellAt(1, [i, j])
-
-
             }
+
+            // Middle cell
+            this.gm.seedCellAt(1, [this.C.midpoint[0], this.C.midpoint[1] - gap ])
 
             // Seed other cells above wall
             let nrcells = this.conf["NRCELLS"], cellkind, n
@@ -189,10 +192,12 @@
                     let x = getRandomInt(this.C.extents[0])
                     let y = getRandomInt(this.C.extents[1] / 2 - 10)
                     this.gm.seedCellAt(cellkind + 1, [x, y])
+
+
+
                 }
             }
         }
-
 
         function getRandomInt(max) {
             return Math.floor(Math.random() * max);

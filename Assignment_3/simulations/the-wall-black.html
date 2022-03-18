@@ -27,18 +27,20 @@
         "use strict"
 
         // Large value used to create static cells serving as obstacles
-        console.log("-\ttime\tid\ttype\tx\ty")
+        console.log("-\ttime\tid\ttype\tx\ty\tbelow wall")
         let m = 10 ** 18
+        let n_simulations = 10
+        let current = 0
+        let rate = 100
 
 
         let config = {
             // Grid settings
             field_size: [150, 150],
-            
+
 
             // CPM parameters and configuration
             conf: {
-                seed: 2022,
                 T: 20,
                 torus: [false, false],
 
@@ -59,25 +61,24 @@
 
                 // Activation parameters
                 LAMBDA_ACT: [0, 0, 200],
-                MAX_ACT: [0, 0, 80],
+                MAX_ACT: [0, 0, 20],
                 ACT_MEAN: "geometric"
             },
 
             // Simulation setup and configuration
             simsettings: {
 
-                NRCELLS: [0, 0],
+                NRCELLS: [0, 50],
 
                 RUNTIME: 1000,
                 RUNTIME_BROWSER: 1000,
 
                 CANVASCOLOR: "eaecef",
-                CELLCOLOR: ["AAAAAA", "0000FF"],
+                CELLCOLOR: ["AAAAAA", "000000"],
                 ACTCOLOR: [false, true],
 
                 // Logging
-                STATSOUT: { browser: true, node: true },   // Should stats be computed?
-                LOGRATE: 10,						        // Output stats every <LOGRATE> MCS.
+                STATSOUT: { browser: false, node: false },   // Should stats be computed?
 
                 zoom: 4,
 
@@ -90,7 +91,7 @@
             let custommethods = {
                 logStats: logStats,
                 initializeGrid: initializeGrid,
-                getRandomInt: getRandomInt
+                getRandomInt: getRandomInt,
             }
             sim = new CPM.Simulation(config, custommethods)
 
@@ -99,18 +100,39 @@
 
 
         function step() {
-            sim.step()
+            for (var i = 0; i < rate; i++){
+                sim.step()
+            }
+
+            // request new animiation frame
             if (sim.conf["RUNTIME_BROWSER"] == "Inf" | sim.time + 1 < sim.conf["RUNTIME_BROWSER"]) {
                 requestAnimationFrame(step)
             }
+
+            // restart simulation
+            else if (current + 1 < n_simulations) {
+                sim.logStats()
+                current += 1
+
+                // Remove canvas of old simulation
+                var element = document.getElementsByTagName("canvas"), index;
+                for (index = element.length - 1; index >= 0; index--) {
+                    element[index].parentNode.removeChild(element[index]);
+                }
+
+                // reinitialize canvas 
+                initialize()
+            }
+
         }
 
-        // Default logging function but also writes logs to output file 
+        // Added boolean whether cell is below center of canvas
         function logStats() {
 
             // compute centroids for all cells
             let allcentroids
             let torus = false
+            let count = 0
             for (let d = 0; d < this.C.grid.ndim; d++) {
                 if (this.C.grid.torus[d]) {
                     torus = true
@@ -132,9 +154,10 @@
 
                 if (cellKind != 0 && cellKind != 1) {
                     console.log("-\t" + this.time + "\t" + cid + "\t" +
-                        this.C.cellKind(cid) + "\t" + thecentroid.join("\t"))
+                        this.C.cellKind(cid) + "\t" + thecentroid.join("\t") +
+                        "\t" + String(thecentroid[1] > this.C.extents[1] / 2)
+                    )
                 }
-
             }
         }
 
@@ -146,21 +169,21 @@
 
             // Seed obstacles
             let step = 5
-            let gap = 30    
+            let gap = 30
             var j = this.C.extents[1] / 2
 
             // Left side of wall
             for (var i = 1; i < this.C.extents[0] / 2 - gap; i += step) {
-                    this.gm.seedCellAt(1, [i, j])
-                
+                this.gm.seedCellAt(1, [i, j])
+
             }
 
             // Right side of wall
-            for (var i  = this.C.extents[0] / 2 + gap; i < this.C.extents[0]; i += step) {
+            for (var i = this.C.extents[0] / 2 + gap; i < this.C.extents[0]; i += step) {
                 this.gm.seedCellAt(1, [i, j])
-            
-            
-        }
+
+
+            }
 
             // Seed other cells above wall
             let nrcells = this.conf["NRCELLS"], cellkind, n
@@ -169,17 +192,15 @@
                     let x = getRandomInt(this.C.extents[0])
                     let y = getRandomInt(this.C.extents[1] / 2 - 10)
                     this.gm.seedCellAt(cellkind + 1, [x, y])
-                    
-                    
-                    
                 }
             }
         }
 
+
         function getRandomInt(max) {
             return Math.floor(Math.random() * max);
         }
-          
+
 
 
 

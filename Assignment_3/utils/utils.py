@@ -1,8 +1,14 @@
 import pandas as pd
 import numpy as np
-import os
 import math
 from pathlib import Path
+
+
+def countBelowMidpoint(file: str):
+    df = pd.read_csv(file, sep='\t')
+    count = df["below wall"].value_counts()
+    print(f"{file}:\t {count}")
+
 
 
 def getAverageMovement(file: str):
@@ -17,12 +23,11 @@ def getAverageMovement(file: str):
         # Check for nan value which may result in case of collapsed cells
         if not math.isnan(average_movement):
             average_movements.append(np.average(movements))
-            
     return np.average(average_movements)
         
                 
 def main():
-    root = Path("../logs/")
+    root = Path("logs")
     results = [] 
     
     for f in  root.rglob("*.csv"):
@@ -30,6 +35,9 @@ def main():
         
     df = pd.DataFrame(results, columns=["File", "Avg. movement"])
     print(df)
+    
+    for f in root.rglob("*wall*.csv"):
+        countBelowMidpoint(f)
 
 
 if __name__ == "__main__":
