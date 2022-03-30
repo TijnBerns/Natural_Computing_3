@@ -1,0 +1,13 @@
+<project>
+	<modelVersion>4.0.0</modelVersion>
+    <groupId>nl.ru.language_classifier</groupId>
+    <artifactId>LanguageClassifier</artifactId>
+    <version>1</version>
+    <dependencies>
+	    <dependency>
+			<groupId>be.cylab</groupId>
+			<artifactId>java-roc</artifactId>
+			<version>0.0.6</version>
+		</dependency>
+	</dependencies>
+</project>
