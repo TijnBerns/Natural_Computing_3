@@ -1,4 +1,4 @@
-package language_classifier;
+package intrusion_detection;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -32,61 +32,60 @@ import util.Debug;
 import util.Settings;
 
 
-public class LanguageClassifier {
+public class IntrusionDetection {
 	// Parameters to use
-	static int n = 10;	// Length of strings in self set
+	static int n = 7;	// Length of strings in self set
 	static int r = 3; 	// Parameter r <= n
 	static int r2 = 0; // Output k-th component of matching profile (0 for full profile)
-	static String self = "lang\\english.train";	// File containing self set (1 string per line)
-	static String alpha = null; 			// Alphabet, currently one of [infer|binary|binaryletter|amino|damino|latin]. Default: infer (uses all characters from \\\"self\\\" file as alphabet). Alternatively, specify file://[f] to set the alphabet to all characters found in file [f].
+	static String self = "syscalls\\snd-cert\\snd-cert.train";		// File containing self set (1 string per line)
+	static String alpha = "syscalls\\\\snd-cert\\\\snd-cert.alpha"; // Alphabet, currently one of [infer|binary|binaryletter|amino|damino|latin]. Default: infer (uses all characters from \\\"self\\\" file as alphabet). Alternatively, specify file://[f] to set the alphabet to all characters found in file [f].
 	static boolean invertmatch = false;	
 	static boolean matching_profile = false;// true if r2 > 0
 	static boolean logarithmize = true;		// Output logarithms instead of actual values
 	static boolean counting = true;			// Count matching detectors instead of binary match
 	
+	// Class uses chunk matching only
 	
-	public static double getMatchingDetectors(String line, int i1, int i2, PatternTrie matcher, ContiguousCountingDAG counter, long baseline) {
+	public static double getMatchingDetectors(String line, int i1, int i2, PatternTrie matcher, ContiguousCountingDAG counter, long baseline, List<PatternTrie> chunks) {
+		int lineindex;
 		if( line.length() < n ){
 			System.out.print( "NaN" );
 		}
-		
-		double nmatch = 0;
-		
-    	// r-contiguous detectors
-    	long last_result = -1;
-    	for( int i = i1 ; i <= i2 ; i ++ ){
-    		if( last_result != 0 ){
-    			if( counting ){
-					last_result = counter.countStringsThatMatch(line,i) - (i<r?baseline:0);
-				} else {
-					int rm = 1;
-					while( matcher.matches(line,rm) >= rm && rm <= n ){
-						rm ++;
-					}
-						
-					last_result = rm-1;
+		double score = 0;
+		for( lineindex = 0; lineindex <= line.length()-n ; lineindex ++ ){
+			double[] nmatch = new double[i2-i1+1];
+			String l = line.substring( lineindex, lineindex+n );
+			
+			// r-chunk detectors
+			int i = 0;
+			for( PatternTrie chunkmatcher : chunks ){
+				if( chunkmatcher.matches(l.substring(i),r) >= r != invertmatch ){
+					nmatch[0] ++;
 				}
-             
-    			if( logarithmize ){
-    				nmatch += Math.log(1+last_result)/Math.log(2.);
-    			} else {
-    				nmatch += last_result;
-    			}
-    		}
-    	} 
-	     
-	    return nmatch;
+				i++;
+			}
+			if( logarithmize ){
+				nmatch[0] = Math.log(1+nmatch[0])/Math.log(2.);
+			}
+			
+			score += nmatch[0];
+		}
+		
+		System.out.println(score / lineindex);
+		
+        // Return averaged nmatch
+	    return score / lineindex;
 	}
 	
-	public static void negativeSelection(String second_lang) throws FileNotFoundException {
+	public static void negativeSelection(String file_path) throws FileNotFoundException {
 		Settings.DEBUG = false;	// Print debug information
 		
 		// Set the alphabet to all characters found in file 
 		Alphabet.set(new BinaryAlphabet());
-		if (!new File(self).canRead()) {
-			throw new IllegalArgumentException("Can't read file " + self);
+		if (!new File(self).canRead() || !new File(alpha).canRead()) {
+			throw new IllegalArgumentException("Can't read file " + self + " or " + alpha);
 		}
-		Alphabet.set(new Alphabet(new File(self)));
+		Alphabet.set(new Alphabet(new File(alpha)));
 		
 		if (r < 0 || n <= 0 || r > n) {
 			throw new IllegalArgumentException(
@@ -97,13 +96,7 @@ public class LanguageClassifier {
 		List<PatternTrie> chunks = RChunkPatterns.rChunkPatterns(self, n, r, 0);
 		PatternTrie matcher = null;
 		ContiguousCountingDAG counter = null;
-		long baseline = 0;  
-			
-		if( counting ){
-			counter = new ContiguousCountingDAG(chunks, n, r);
-		} else {
-			matcher = RChunkPatterns.rContiguousGraphWithFailureLinks(chunks, n, r);
-		}
+		long baseline = 0; 
 	
 		// output matching lengths to be used
 		int i1 = 0, i2 = 0;
@@ -120,26 +113,27 @@ public class LanguageClassifier {
 		Debug.log("matcher constructed");
 		
 		// Scan english.test and generates scores
-		File english_test = new File("lang\\english.test");
-		Scanner scan = new Scanner(english_test);
+		File test_file = new File(file_path + ".test");
+		File label_file = new File(file_path + ".labels");
+		Scanner scan_test = new Scanner(test_file);
+		Scanner scan_labels = new Scanner(label_file);
 		List<Double> score = new ArrayList<Double>();
 		List<Double> true_alert = new ArrayList<Double>();
-		while ( scan.hasNextLine() ) {
-			String line = scan.nextLine().trim();
-			score.add(getMatchingDetectors(line, i1, i2, matcher, counter, baseline));
-			true_alert.add(0.0);
+		int i = 0;
+		while ( scan_test.hasNextLine() ) {
+			i++;
+			String line = scan_test.nextLine().trim();
+			score.add(getMatchingDetectors(line, i1, i2, matcher, counter, baseline, chunks));
+			
+			// for true_alert, use .labels
+			String label = scan_labels.nextLine().trim();
+			System.out.println(label);
+			true_alert.add(Double.parseDouble(label));
 		}
-		scan.close();
 		
-		// Scan second language file and generate scores
-		File foreign_test = new File(second_lang);
-		scan = new Scanner(foreign_test);
-		while ( scan.hasNextLine() ) {
-			String line = scan.nextLine().trim();
-			score.add(getMatchingDetectors(line, i1, i2, matcher, counter, baseline));
-			true_alert.add(1.0);
-		}
-		scan.close();
+		// Close scanners
+		scan_test.close();
+		scan_labels.close();
 		
 		// normalize scores and map to double array
 		double max_score = Collections.max(score);
@@ -156,8 +150,8 @@ public class LanguageClassifier {
 	
 	public static void main(String[] args) {
 		try {
-			String second_lang = "lang\\xhosa.txt";
-			negativeSelection(second_lang);
+			String file_path = "syscalls\\snd-cert\\snd-cert.3";
+			negativeSelection(file_path);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
