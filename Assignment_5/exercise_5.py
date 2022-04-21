@@ -71,8 +71,7 @@ def ensamble(X_train, y_train, X_test, n_trees, max_depth, max_leaf_nodes):
     y_train_split = np.array_split(y_train, n_trees)
 
     for (X, y) in zip(X_train_split, y_train_split):
-        clf = DecisionTreeClassifier(
-            max_depth=max_depth, max_leaf_nodes=max_leaf_nodes)
+        clf = DecisionTreeClassifier(max_depth=max_depth, max_leaf_nodes=max_leaf_nodes)
         clf.fit(X, y)
         y_pred += clf.predict(X_test)
     return np.round(y_pred / n_trees)
@@ -87,7 +86,7 @@ def ex5(X_train, y_train, X_test, y_test, max_depth, max_leaf_nodes):
     plt.figure()
     plt.title(f"Max depth {max_depth}, Max leaf nodes {max_leaf_nodes}")
     plt.plot(res)
-    plt.xlabel("Number of stumps in ensamble")
+    plt.xlabel("Number of trees in ensamble")
     plt.ylabel("Accuracy")
     plt.show()
 
@@ -96,16 +95,18 @@ if __name__ == "__main__":
     np.random.seed(2022)
     fname = "data/wdbc.csv"
     X_train, y_train, X_test, y_test = load_data(fname)
+    depth = 1
+    leafs = 2
 
     # Baseline
-    y_pred = ensamble(X_train, y_train, X_test, 1, 2, 4)
+    y_pred = ensamble(X_train, y_train, X_test, 1, depth, leafs)
     accuracy = evaluate_pred(y_test, y_pred)['accuracy']
     print(f"Accuracy single tree:\t {accuracy}")
 
     # Ensamble 
-    y_pred = ensamble(X_train, y_train, X_test, 10, 2, 4)
+    y_pred = ensamble(X_train, y_train, X_test, 10, depth, leafs)
     accuracy = evaluate_pred(y_test, y_pred)['accuracy']
     print(f"Accuracy ensamble:\t {accuracy}")
     
     # Create different plots...
-    ex5(X_train, y_train, X_test, y_test, 2, 4)
+    ex5(X_train, y_train, X_test, y_test, depth, leafs)
